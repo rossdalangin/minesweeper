@@ -139,6 +139,46 @@ class Quiz_Sweeper_Admin {
             $this->plugin_name . '-how-to-use',
             array( $this, 'render_how_to_use_page' )
         );
+
+        add_submenu_page(
+            $this->plugin_name,
+            __( 'Debug Log', 'quiz-sweeper' ),
+            __( 'Debug Log', 'quiz-sweeper' ),
+            'manage_options',
+            $this->plugin_name . '-debug-log',
+            array( $this, 'render_debug_log_page' )
+        );
+    }
+
+    public function render_debug_log_page() {
+        ?>
+        <div class="wrap">
+            <h1><?php _e( 'Debug Log', 'quiz-sweeper' ); ?></h1>
+            <p><?php _e( 'This page displays the last error message recorded by the plugin.', 'quiz-sweeper' ); ?></p>
+            <?php
+            if ( isset( $_POST['clear_log'] ) && check_admin_referer( 'qs_clear_log_nonce' ) ) {
+                delete_transient( 'quiz_sweeper_debug_log' );
+                echo '<div class="updated notice"><p>Debug log cleared.</p></div>';
+            }
+            $log_data = get_transient( 'quiz_sweeper_debug_log' );
+            echo '<h3>Last Logged Data:</h3>';
+            echo '<pre style="white-space: pre-wrap; word-wrap: break-word; background: #fff; border: 1px solid #ccc; padding: 10px;">';
+            if ( $log_data ) {
+                print_r( $log_data );
+            } else {
+                echo 'No data logged yet.';
+            }
+            echo '</pre>';
+            ?>
+            <form method="post">
+                <?php wp_nonce_field( 'qs_clear_log_nonce' ); ?>
+                <input type="hidden" name="clear_log" value="1">
+                <p class="submit">
+                    <input type="submit" class="button" value="Clear Log">
+                </p>
+            </form>
+        </div>
+        <?php
     }
 
     public function render_how_to_use_page() {
@@ -173,19 +213,27 @@ class Quiz_Sweeper_Admin {
     }
 
     public function ajax_add_question_to_quiz() {
+        $log_data = array( 'timestamp' => current_time('mysql'), 'post_data' => $_POST );
+
         if ( ! check_ajax_referer( 'quiz_sweeper_admin_nonce', 'nonce', false ) ) {
+            $log_data['error'] = 'Nonce verification failed.';
+            set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
             wp_send_json_error( array( 'message' => 'Error: Nonce verification failed.' ) );
             return;
         }
 
         $quiz_id = isset( $_POST['quiz_id'] ) ? intval( $_POST['quiz_id'] ) : 0;
         if ( ! current_user_can( 'edit_post', $quiz_id ) ) {
+            $log_data['error'] = 'Permission check failed.';
+            set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
             wp_send_json_error( array( 'message' => 'Error: You do not have permission to edit this quiz.' ) );
             return;
         }
 
         $title = isset( $_POST['question_title'] ) ? sanitize_text_field( $_POST['question_title'] ) : '';
         if ( empty( $title ) ) {
+            $log_data['error'] = 'Question title was empty.';
+            set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
             wp_send_json_error( array( 'message' => 'Error: Question title cannot be empty.' ) );
             return;
         }
@@ -202,11 +250,16 @@ class Quiz_Sweeper_Admin {
         $question_id = wp_insert_post( $question_post_data, true ); // Second param to return WP_Error on failure
 
         if ( is_wp_error( $question_id ) ) {
+            $log_data['error'] = 'wp_insert_post failed.';
+            $log_data['wp_error'] = $question_id->get_error_message();
+            set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
             wp_send_json_error( array( 'message' => 'Error on wp_insert_post: ' . $question_id->get_error_message() ) );
             return;
         }
 
         if ( $question_id === 0 ) {
+             $log_data['error'] = 'wp_insert_post returned 0.';
+             set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
              wp_send_json_error( array( 'message' => 'Error: wp_insert_post returned 0. The question was not created.' ) );
              return;
         }
@@ -392,19 +445,26 @@ class Quiz_Sweeper_Admin {
         // Handle Save Members
         if ( isset( $_POST['action'] ) && $_POST['action'] == 'save_members' && isset( $_POST['group_id'] ) && check_admin_referer( 'save_members_nonce' ) ) {
             $group_id = intval( $_POST['group_id'] );
-            $member_ids = isset( $_POST['member_ids'] ) ? array_map( 'intval', $_POST['member_ids'] ) : array();
+            $submitted_member_ids = isset( $_POST['member_ids'] ) ? array_map( 'intval', $_POST['member_ids'] ) : array();
 
-            // Get all users associated with the student_group taxonomy
-            $all_users_in_any_group = get_objects_in_term( get_terms('student_group', array('fields' => 'ids')), 'student_group' );
+            $current_member_ids = get_objects_in_term($group_id, 'student_group');
+            if (!is_array($current_member_ids)) {
+                $current_member_ids = array();
+            }
 
-            foreach($all_users_in_any_group as $user_id) {
-                // If a user was previously in a group but now is not in the current group, remove them.
-                if(!in_array($user_id, $member_ids)) {
+            $users_to_remove = array_diff($current_member_ids, $submitted_member_ids);
+            if (!empty($users_to_remove)) {
+                foreach ($users_to_remove as $user_id) {
                     wp_remove_object_terms($user_id, $group_id, 'student_group');
                 }
             }
 
-            wp_set_object_terms( $group_id, $member_ids, 'student_group', false );
+            $users_to_add = array_diff($submitted_member_ids, $current_member_ids);
+            if (!empty($users_to_add)) {
+                foreach ($users_to_add as $user_id) {
+                    wp_add_object_terms($user_id, $group_id, 'student_group');
+                }
+            }
 
             wp_redirect( admin_url( 'admin.php?page=' . $this->plugin_name . '-groups' ) );
             exit;
