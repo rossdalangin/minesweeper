@@ -61,3 +61,58 @@ function run_quiz_sweeper() {
 
 }
 run_quiz_sweeper();
+
+
+/**
+ * AJAX handler for adding a question to a quiz.
+ * Moved here for debugging purposes.
+ */
+function quiz_sweeper_ajax_add_question_to_quiz() {
+    if ( ! check_ajax_referer( 'quiz_sweeper_admin_nonce', 'nonce', false ) ) {
+        wp_send_json_error( array( 'message' => 'Error: Nonce verification failed.' ) );
+        return;
+    }
+
+    $quiz_id = isset( $_POST['quiz_id'] ) ? intval( $_POST['quiz_id'] ) : 0;
+    if ( ! current_user_can( 'edit_post', $quiz_id ) ) {
+        wp_send_json_error( array( 'message' => 'Error: You do not have permission to edit this quiz.' ) );
+        return;
+    }
+
+    $title = isset( $_POST['question_title'] ) ? sanitize_text_field( $_POST['question_title'] ) : '';
+    if ( empty( $title ) ) {
+        wp_send_json_error( array( 'message' => 'Error: Question title cannot be empty.' ) );
+        return;
+    }
+
+    $choices = isset( $_POST['choices'] ) ? array_map( 'sanitize_text_field', $_POST['choices'] ) : array();
+    $correct_choice = isset( $_POST['correct_choice'] ) ? intval( $_POST['correct_choice'] ) : -1;
+
+    $question_post_data = array(
+        'post_type'    => 'question',
+        'post_title'   => $title,
+        'post_status'  => 'publish',
+    );
+
+    $question_id = wp_insert_post( $question_post_data, true );
+
+    if ( is_wp_error( $question_id ) ) {
+        wp_send_json_error( array( 'message' => 'Error on wp_insert_post: ' . $question_id->get_error_message() ) );
+        return;
+    }
+
+    if ( $question_id === 0 ) {
+         wp_send_json_error( array( 'message' => 'Error: wp_insert_post returned 0. The question was not created.' ) );
+         return;
+    }
+
+    update_post_meta( $question_id, '_quiz_id', $quiz_id );
+    update_post_meta( $question_id, '_choices', $choices );
+    update_post_meta( $question_id, '_correct_choice', $correct_choice );
+
+    wp_send_json_success( array(
+        'id' => $question_id,
+        'title' => $title,
+    ) );
+}
+add_action( 'wp_ajax_add_question_to_quiz', 'quiz_sweeper_ajax_add_question_to_quiz' );
