@@ -28,7 +28,8 @@
         // Handle "Save Question" button click
         $('#add-question-form-wrapper').on('click', '#save-question-button', function(e) {
             e.preventDefault();
-            saveQuestion();
+            var form = $(this).closest('form');
+            saveQuestion(form);
         });
 
         // Handle "Delete Question" button click
@@ -79,7 +80,7 @@
 
         function showAddQuestionForm() {
             var formHtml = `
-                <form id="new-question-form" style="border: 1px solid #ccc; padding: 15px; margin-top: 15px;">
+                <div id="new-question-form" style="border: 1px solid #ccc; padding: 15px; margin-top: 15px;">
                     <h4>New Question</h4>
                     <p><input type="text" name="question_title" placeholder="Question Text" style="width: 100%;" /></p>
                     <p><strong>Choices (the first choice is the correct one by default):</strong></p>
@@ -94,7 +95,7 @@
                         <button type="button" id="save-question-button" class="button button-primary">Save Question</button>
                         <button type="button" id="cancel-add-question" class="button">Cancel</button>
                     </p>
-                </form>
+                </div>
             `;
             $('#add-question-form-wrapper').html(formHtml).show();
             $('#add-question-button').hide();
@@ -105,14 +106,16 @@
             $('#add-question-button').show();
         }
 
-        function saveQuestion() {
+        function saveQuestion(form) {
+            var questionTitleEl = form.find('[name="question_title"]')[0];
+
             var questionData = {
                 action: 'add_question_to_quiz',
                 nonce: nonce,
                 quiz_id: quizId,
-                question_title: $('#new-question-form [name="question_title"]').val(),
-                choices: $('#new-question-form [name="choices[]"]').map(function(){ return $(this).val(); }).get(),
-                correct_choice: $('#new-question-form [name="correct_choice"]:checked').val()
+                question_title: questionTitleEl ? questionTitleEl.value : '',
+                choices: form.find('[name="choices[]"]').map(function(){ return $(this).val(); }).get(),
+                correct_choice: form.find('[name="correct_choice"]:checked').val()
             };
 
             if (!questionData.question_title) {
