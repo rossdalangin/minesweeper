@@ -135,6 +135,7 @@ class Quiz_Sweeper {
         $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
         $this->loader->add_action( 'admin_menu', $plugin_admin, 'add_admin_menu' );
         $this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'add_quiz_meta_boxes' );
+        $this->loader->add_action( 'wp_ajax_add_question_to_quiz', $plugin_admin, 'ajax_add_question_to_quiz' );
         $this->loader->add_action( 'wp_ajax_get_quiz_questions', $plugin_admin, 'ajax_get_quiz_questions' );
         $this->loader->add_action( 'wp_ajax_delete_quiz_question', $plugin_admin, 'ajax_delete_quiz_question' );
         $this->loader->add_action( 'wp_ajax_reveal_cell', $plugin_admin, 'ajax_reveal_cell' );
