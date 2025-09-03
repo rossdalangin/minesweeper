@@ -25,8 +25,8 @@
             hideAddQuestionForm();
         });
 
-        // Handle "Save Question" form submission
-        $('#add-question-form-wrapper').on('submit', '#new-question-form', function(e) {
+        // Handle "Save Question" button click
+        $('#add-question-form-wrapper').on('click', '#save-question-button', function(e) {
             e.preventDefault();
             saveQuestion();
         });
@@ -91,7 +91,7 @@
                         <li><input type="text" name="choices[]" style="width: 80%"/> <input type="radio" name="correct_choice" value="4" /> Correct</li>
                     </ol>
                     <p>
-                        <button type="submit" class="button button-primary">Save Question</button>
+                        <button type="button" id="save-question-button" class="button button-primary">Save Question</button>
                         <button type="button" id="cancel-add-question" class="button">Cancel</button>
                     </p>
                 </form>
