@@ -123,7 +123,18 @@
             $.post(ajaxUrl, questionData, function(response) {
                 if (response.success) {
                     hideAddQuestionForm();
-                    fetchQuestions();
+                    // Instead of fetching all questions, just append the new one
+                    var newQuestion = response.data;
+                    var newRow = '<tr><td>' + newQuestion.title + '</td><td><button class="button delete-question" data-question-id="' + newQuestion.id + '">Delete</button></td></tr>';
+
+                    // If this is the first question, we need to create the table
+                    if ($('#questions-container').find('table').length === 0) {
+                        var tableHtml = '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Question</th><th>Actions</th></tr></thead><tbody>' + newRow + '</tbody></table>';
+                        $('#questions-container').html(tableHtml);
+                    } else {
+                        $('#questions-container').find('tbody').append(newRow);
+                    }
+
                 } else {
                     alert('Error: ' + (response.data ? response.data.message : 'Unknown error'));
                 }

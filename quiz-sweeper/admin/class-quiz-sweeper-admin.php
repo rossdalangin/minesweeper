@@ -60,7 +60,7 @@ class Quiz_Sweeper_Admin {
      * @since    1.0.0
      */
     public function enqueue_styles() {
-        // This function will be filled in later.
+        // No custom stylesheets needed for the admin area at this time.
     }
 
     /**
@@ -130,6 +130,46 @@ class Quiz_Sweeper_Admin {
             $this->plugin_name . '-start',
             array( $this, 'render_start_quiz_page' )
         );
+
+        add_submenu_page(
+            $this->plugin_name,
+            __( 'How to Use', 'quiz-sweeper' ),
+            __( 'How to Use', 'quiz-sweeper' ),
+            'manage_options',
+            $this->plugin_name . '-how-to-use',
+            array( $this, 'render_how_to_use_page' )
+        );
+    }
+
+    public function render_how_to_use_page() {
+        ?>
+        <div class="wrap">
+            <h1><?php _e( 'How to Use Quiz Sweeper', 'quiz-sweeper' ); ?></h1>
+            <p><?php _e( 'Follow these steps to set up and run a new quiz game.', 'quiz-sweeper' ); ?></p>
+
+            <h2>Step 1: Create Your Student Groups</h2>
+            <p>Go to the <a href="<?php echo admin_url('admin.php?page=' . $this->plugin_name . '-groups'); ?>">Manage Groups</a> page to create groups (e.g., "Group A", "Group B") and assign your student users to them.</p>
+
+            <h2>Step 2: Create a Quiz with Questions</h2>
+            <p>Go to the <a href="<?php echo admin_url('edit.php?post_type=quiz'); ?>">Quizzes</a> page and create a new quiz. Give it a title. In the quiz editor, you will find a "Quiz Questions" box where you can add each question and its five choices, and select the correct answer.</p>
+
+            <h2>Step 3: Create the Game Board Page</h2>
+            <p>This is the page your students will visit to play the game.</p>
+            <ol>
+                <li>Go to <strong>Pages -> Add New</strong>.</li>
+                <li>Give the page a title, for example, "Quiz Game".</li>
+                <li>In the content editor, add the following shortcode:</li>
+                <li><pre><code>[quiz_sweeper_board]</code></pre></li>
+                <li>Publish the page.</li>
+            </ol>
+
+            <h2>Step 4: Start the Game</h2>
+            <p>Go to the <a href="<?php echo admin_url('admin.php?page=' . $this->plugin_name . '-start'); ?>">Start Quiz</a> page. Select the quiz you want to run and the groups that will participate, then click "Start Quiz Game".</p>
+
+            <h2>Step 5: Students Play!</h2>
+            <p>Students can now log in and navigate to the page you created in Step 3. The game board will be visible and they can start playing.</p>
+        </div>
+        <?php
     }
 
     public function ajax_add_question_to_quiz() {
@@ -158,7 +198,10 @@ class Quiz_Sweeper_Admin {
             update_post_meta( $question_id, '_quiz_id', $quiz_id );
             update_post_meta( $question_id, '_choices', $choices );
             update_post_meta( $question_id, '_correct_choice', $correct_choice );
-            wp_send_json_success();
+            wp_send_json_success( array(
+                'id' => $question_id,
+                'title' => $title,
+            ) );
         } else {
             wp_send_json_error( array( 'message' => 'Could not save question.' ) );
         }

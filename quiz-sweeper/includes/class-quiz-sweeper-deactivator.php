@@ -23,14 +23,14 @@
 class Quiz_Sweeper_Deactivator {
 
     /**
-     * Short Description. (use period)
+     * Runs on plugin deactivation.
      *
-     * Long Description.
+     * No cleanup needed at this time. This method is a placeholder.
      *
      * @since    1.0.0
      */
     public static function deactivate() {
-        // We will add deactivation logic here in a future step.
+        // No action needed on deactivation.
     }
 
 }

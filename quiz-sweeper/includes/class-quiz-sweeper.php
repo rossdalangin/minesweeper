@@ -70,7 +70,7 @@ class Quiz_Sweeper {
         if ( defined( 'QUIZ_SWEEPER_VERSION' ) ) {
             $this->version = QUIZ_SWEEPER_VERSION;
         } else {
-            $this->version = '1.0.0';
+            $this->version = '1.0.1';
         }
         $this->plugin_name = 'quiz-sweeper';
 

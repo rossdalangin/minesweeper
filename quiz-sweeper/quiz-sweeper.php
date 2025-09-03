@@ -3,7 +3,7 @@
  * Plugin Name:       Quiz Sweeper
  * Plugin URI:        https://example.com/
  * Description:       A competitive quiz game for students, inspired by Minesweeper.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            Jules
  * Author URI:        https://example.com/
  * License:           GPL-2.0+
