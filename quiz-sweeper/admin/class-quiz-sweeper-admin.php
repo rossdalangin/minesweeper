@@ -22,6 +22,116 @@
  */
 class Quiz_Sweeper_Admin {
 
+    /**
+     * The ID of this plugin.
+     *
+     * @since    1.0.0
+     * @access   private
+     * @var      string    $plugin_name    The ID of this plugin.
+     */
+    private $plugin_name;
+
+    /**
+     * The version of this plugin.
+     *
+     * @since    1.0.0
+     * @access   private
+     * @var      string    $version    The current version of this plugin.
+     */
+    private $version;
+
+    /**
+     * Initialize the class and set its properties.
+     *
+     * @since    1.0.0
+     * @param      string    $plugin_name       The name of this plugin.
+     * @param      string    $version    The version of this plugin.
+     */
+    public function __construct( $plugin_name, $version ) {
+
+        $this->plugin_name = $plugin_name;
+        $this->version = $version;
+
+    }
+
+    /**
+     * Register the stylesheets for the admin area.
+     *
+     * @since    1.0.0
+     */
+    public function enqueue_styles() {
+        // This function will be filled in later.
+    }
+
+    /**
+     * Register the JavaScript for the admin area.
+     *
+     * @since    1.0.0
+     */
+    public function enqueue_scripts( $hook ) {
+        global $post;
+
+        // Only load this script on the quiz edit screen
+        if ( 'post.php' != $hook && 'post-new.php' != $hook ) {
+            return;
+        }
+        if ( ! isset( $post->post_type ) || 'quiz' != $post->post_type ) {
+            return;
+        }
+
+        wp_enqueue_script(
+            $this->plugin_name . '_admin',
+            plugin_dir_url( __FILE__ ) . 'js/quiz-sweeper-admin.js',
+            array( 'jquery' ),
+            $this->version,
+            true
+        );
+
+        wp_localize_script(
+            $this->plugin_name . '_admin',
+            'quiz_sweeper_admin_ajax',
+            array(
+                'ajax_url' => admin_url( 'admin-ajax.php' ),
+                'nonce'    => wp_create_nonce( 'quiz_sweeper_admin_nonce' ),
+                'quiz_id'  => $post->ID,
+            )
+        );
+    }
+
+    /**
+     * Add the top-level admin menu for the plugin.
+     *
+     * @since    1.0.0
+     */
+    public function add_admin_menu() {
+        add_menu_page(
+            __( 'Quiz Sweeper', 'quiz-sweeper' ),
+            __( 'Quiz Sweeper', 'quiz-sweeper' ),
+            'manage_options',
+            $this->plugin_name,
+            array( $this, 'render_main_dashboard_page' ),
+            'dashicons-games'
+        );
+
+        add_submenu_page(
+            $this->plugin_name,
+            __( 'Manage Groups', 'quiz-sweeper' ),
+            __( 'Manage Groups', 'quiz-sweeper' ),
+            'manage_options',
+            $this->plugin_name . '-groups',
+            array( $this, 'render_groups_page' )
+        );
+
+        add_submenu_page(
+            $this->plugin_name,
+            __( 'Start Quiz', 'quiz-sweeper' ),
+            __( 'Start Quiz', 'quiz-sweeper' ),
+            'manage_options',
+            $this->plugin_name . '-start',
+            array( $this, 'render_start_quiz_page' )
+        );
+    }
+
     public function ajax_add_question_to_quiz() {
         check_ajax_referer( 'quiz_sweeper_admin_nonce', 'nonce' );
 
@@ -194,116 +304,6 @@ class Quiz_Sweeper_Admin {
         </div>
         <button type="button" id="add-question-button" class="button"><?php _e( 'Add a Question', 'quiz-sweeper' ); ?></button>
         <?php
-    }
-
-    /**
-     * The ID of this plugin.
-     *
-     * @since    1.0.0
-     * @access   private
-     * @var      string    $plugin_name    The ID of this plugin.
-     */
-    private $plugin_name;
-
-    /**
-     * The version of this plugin.
-     *
-     * @since    1.0.0
-     * @access   private
-     * @var      string    $version    The current version of this plugin.
-     */
-    private $version;
-
-    /**
-     * Initialize the class and set its properties.
-     *
-     * @since    1.0.0
-     * @param      string    $plugin_name       The name of this plugin.
-     * @param      string    $version    The version of this plugin.
-     */
-    public function __construct( $plugin_name, $version ) {
-
-        $this->plugin_name = $plugin_name;
-        $this->version = $version;
-
-    }
-
-    /**
-     * Register the stylesheets for the admin area.
-     *
-     * @since    1.0.0
-     */
-    public function enqueue_styles() {
-        // This function will be filled in later.
-    }
-
-    /**
-     * Register the JavaScript for the admin area.
-     *
-     * @since    1.0.0
-     */
-    public function enqueue_scripts( $hook ) {
-        global $post;
-
-        // Only load this script on the quiz edit screen
-        if ( 'post.php' != $hook && 'post-new.php' != $hook ) {
-            return;
-        }
-        if ( ! isset( $post->post_type ) || 'quiz' != $post->post_type ) {
-            return;
-        }
-
-        wp_enqueue_script(
-            $this->plugin_name . '_admin',
-            plugin_dir_url( __FILE__ ) . 'js/quiz-sweeper-admin.js',
-            array( 'jquery' ),
-            $this->version,
-            true
-        );
-
-        wp_localize_script(
-            $this->plugin_name . '_admin',
-            'quiz_sweeper_admin_ajax',
-            array(
-                'ajax_url' => admin_url( 'admin-ajax.php' ),
-                'nonce'    => wp_create_nonce( 'quiz_sweeper_admin_nonce' ),
-                'quiz_id'  => $post->ID,
-            )
-        );
-    }
-
-    /**
-     * Add the top-level admin menu for the plugin.
-     *
-     * @since    1.0.0
-     */
-    public function add_admin_menu() {
-        add_menu_page(
-            __( 'Quiz Sweeper', 'quiz-sweeper' ),
-            __( 'Quiz Sweeper', 'quiz-sweeper' ),
-            'manage_options',
-            $this->plugin_name,
-            array( $this, 'render_main_dashboard_page' ),
-            'dashicons-games'
-        );
-
-        add_submenu_page(
-            $this->plugin_name,
-            __( 'Manage Groups', 'quiz-sweeper' ),
-            __( 'Manage Groups', 'quiz-sweeper' ),
-            'manage_options',
-            $this->plugin_name . '-groups',
-            array( $this, 'render_groups_page' )
-        );
-
-        add_submenu_page(
-            $this->plugin_name,
-            __( 'Start Quiz', 'quiz-sweeper' ),
-            __( 'Start Quiz', 'quiz-sweeper' ),
-            'manage_options',
-            $this->plugin_name . '-start',
-            array( $this, 'render_start_quiz_page' )
-        );
     }
 
     /**
