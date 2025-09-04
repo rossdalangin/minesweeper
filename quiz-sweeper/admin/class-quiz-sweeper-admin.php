@@ -389,6 +389,8 @@ class Quiz_Sweeper_Admin {
      * @since    1.0.0
      */
     public function handle_group_form_actions() {
+        global $wpdb;
+
         // Handle Save Members
         if ( isset( $_POST['action'] ) && $_POST['action'] == 'save_members' && isset( $_POST['group_id'] ) && check_admin_referer( 'save_members_nonce' ) ) {
             $group_id = intval( $_POST['group_id'] );
@@ -431,6 +433,56 @@ class Quiz_Sweeper_Admin {
             $group_id = intval( $_GET['group_id'] );
             wp_delete_term( $group_id, 'student_group' );
             wp_redirect( admin_url( 'admin.php?page=' . $this->plugin_name . '-groups&deleted=true' ) );
+            exit;
+        }
+
+        // Handle Start Game
+        if ( isset( $_POST['action'] ) && $_POST['action'] == 'start_game' && check_admin_referer( 'start_game_nonce' ) ) {
+            $quiz_id = intval( $_POST['quiz_id'] );
+            $group_ids = isset( $_POST['group_ids'] ) ? array_map( 'intval', $_POST['group_ids'] ) : array();
+
+            if ( ! empty( $quiz_id ) && ! empty( $group_ids ) ) {
+                // Create the game record
+                $wpdb->insert(
+                    $wpdb->prefix . 'quiz_sweeper_games',
+                    array( 'quiz_id' => $quiz_id, 'status' => 'active', 'start_time' => current_time( 'mysql' ) )
+                );
+                $game_id = $wpdb->insert_id;
+
+                foreach ( $group_ids as $group_id ) {
+                    $wpdb->insert( $wpdb->prefix . 'quiz_sweeper_game_scores', array( 'game_id' => $game_id, 'group_id' => $group_id, 'score' => 0 ) );
+                }
+
+                $question_ids = get_posts( array( 'post_type' => 'question', 'posts_per_page' => -1, 'meta_key' => '_quiz_id', 'meta_value' => $quiz_id, 'fields' => 'ids' ) );
+                $items = array();
+                foreach ( $question_ids as $qid ) $items[] = array( 'type' => 'question', 'value' => $qid );
+                for ( $i = 0; $i < 2; $i++ ) $items[] = array( 'type' => 'bomb', 'value' => 0 );
+                for ( $i = 0; $i < 1; $i++ ) $items[] = array( 'type' => 'knife', 'value' => 0 );
+                shuffle( $items );
+
+                $grid_size = 25; $rows = 5; $cols = 5;
+                for ( $i = 0; $i < $grid_size; $i++ ) {
+                    $row = floor( $i / $cols );
+                    $col = $i % $cols;
+                    $item = array_pop( $items );
+                    $cell_type = $item ? $item['type'] : 'empty';
+                    $cell_value = $item ? $item['value'] : 0;
+                    $wpdb->insert( $wpdb->prefix . 'quiz_sweeper_game_grid', array( 'game_id' => $game_id, 'row_num' => $row, 'col_num' => $col, 'cell_type' => $cell_type, 'cell_value' => $cell_value ) );
+                }
+            }
+            wp_redirect( admin_url( 'admin.php?page=' . $this->plugin_name . '-start&started=true' ) );
+            exit;
+        }
+
+        // Handle Force End Game
+        if ( isset( $_POST['action'] ) && $_POST['action'] == 'force_end_game' && isset($_POST['game_id']) && check_admin_referer( 'qs_force_end_game_nonce' ) ) {
+            $game_id = intval($_POST['game_id']);
+            $wpdb->update(
+                $wpdb->prefix . 'quiz_sweeper_games',
+                array( 'status' => 'complete', 'end_time' => current_time( 'mysql' ) ),
+                array( 'game_id' => $game_id )
+            );
+            wp_redirect( admin_url( 'admin.php?page=' . $this->plugin_name . '-start&ended=true' ) );
             exit;
         }
     }
@@ -578,81 +630,45 @@ class Quiz_Sweeper_Admin {
      */
     public function render_start_quiz_page() {
         global $wpdb;
-
-        // Handle the form submission
-        if ( isset( $_POST['action'] ) && $_POST['action'] == 'start_game' && check_admin_referer( 'start_game_nonce' ) ) {
-            $quiz_id = intval( $_POST['quiz_id'] );
-            $group_ids = isset( $_POST['group_ids'] ) ? array_map( 'intval', $_POST['group_ids'] ) : array();
-
-            // Simple validation
-            if ( empty( $quiz_id ) || empty( $group_ids ) ) {
-                echo '<div class="error notice"><p>Please select a quiz and at least one group.</p></div>';
-            } else {
-                // Check for an existing active game
-                $active_game = $wpdb->get_var( "SELECT game_id FROM {$wpdb->prefix}quiz_sweeper_games WHERE status = 'active'" );
-                if ( $active_game ) {
-                    echo '<div class="error notice"><p>An active game is already in progress. Please end it before starting a new one.</p></div>';
-                } else {
-                    // Create the game record
-                    $wpdb->insert(
-                        $wpdb->prefix . 'quiz_sweeper_games',
-                        array(
-                            'quiz_id'    => $quiz_id,
-                            'status'     => 'active',
-                            'start_time' => current_time( 'mysql' ),
-                        )
-                    );
-                    $game_id = $wpdb->insert_id;
-
-                    // Initialize scores
-                    foreach ( $group_ids as $group_id ) {
-                        $wpdb->insert( $wpdb->prefix . 'quiz_sweeper_game_scores', array( 'game_id' => $game_id, 'group_id' => $group_id, 'score' => 0 ) );
-                    }
-
-                    // Generate grid items
-                    $question_ids = get_posts( array( 'post_type' => 'question', 'posts_per_page' => -1, 'meta_key' => '_quiz_id', 'meta_value' => $quiz_id, 'fields' => 'ids' ) );
-                    $items = array();
-                    foreach ( $question_ids as $qid ) {
-                        $items[] = array( 'type' => 'question', 'value' => $qid );
-                    }
-                    // Add bombs and knives
-                    for ( $i = 0; $i < 2; $i++ ) $items[] = array( 'type' => 'bomb', 'value' => 0 );
-                    for ( $i = 0; $i < 1; $i++ ) $items[] = array( 'type' => 'knife', 'value' => 0 );
-
-                    shuffle( $items );
-
-                    // For now, let's use a 5x5 grid (25 cells)
-                    $grid_size = 25;
-                    $rows = 5;
-                    $cols = 5;
-
-                    // Populate the grid
-                    for ( $i = 0; $i < $grid_size; $i++ ) {
-                        $row = floor( $i / $cols );
-                        $col = $i % $cols;
-                        $item = array_pop( $items );
-
-                        if ( $item ) {
-                            $wpdb->insert( $wpdb->prefix . 'quiz_sweeper_game_grid', array( 'game_id' => $game_id, 'row_num' => $row, 'col_num' => $col, 'cell_type' => $item['type'], 'cell_value' => $item['value'] ) );
-                        } else {
-                             $wpdb->insert( $wpdb->prefix . 'quiz_sweeper_game_grid', array( 'game_id' => $game_id, 'row_num' => $row, 'col_num' => $col, 'cell_type' => 'empty', 'cell_value' => 0 ) );
-                        }
-                    }
-
-                    echo '<div class="updated notice"><p><strong>Game started successfully!</strong> Students can now log in to play.</p></div>';
-                }
-            }
-        }
-
-        // Fetch data for the form
-        $quizzes = get_posts( array( 'post_type' => 'quiz', 'post_status' => 'publish', 'posts_per_page' => -1 ) );
-        $groups = get_terms( array( 'taxonomy' => 'student_group', 'hide_empty' => false ) );
         ?>
         <div class="wrap">
             <h2><?php _e( 'Start a New Quiz', 'quiz-sweeper' ); ?></h2>
-            <p><?php _e( 'Select a quiz and the groups that will participate in the game.', 'quiz-sweeper' ); ?></p>
+            <?php
+            // Check for an existing active game
+            $active_game = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}quiz_sweeper_games WHERE status = 'active'" );
 
-            <form method="post">
+            if ( $active_game ) :
+                $quiz = get_post($active_game->quiz_id);
+            ?>
+                <h3><?php _e('Active Game in Progress', 'quiz-sweeper'); ?></h3>
+                <p>
+                    <strong><?php _e('Quiz:', 'quiz-sweeper'); ?></strong> <?php echo esc_html($quiz->post_title); ?><br>
+                    <strong><?php _e('Started:', 'quiz-sweeper'); ?></strong> <?php echo esc_html($active_game->start_time); ?>
+                </p>
+                <form method="post">
+                    <input type="hidden" name="action" value="force_end_game">
+                    <input type="hidden" name="game_id" value="<?php echo esc_attr($active_game->game_id); ?>">
+                    <?php wp_nonce_field( 'qs_force_end_game_nonce' ); ?>
+                    <p class="submit">
+                        <input type="submit" name="submit" id="submit" class="button button-primary" value="<?php _e( 'Force End Game', 'quiz-sweeper' ); ?>">
+                    </p>
+                </form>
+            <?php else : ?>
+                <p><?php _e( 'Select a quiz and the groups that will participate in the game.', 'quiz-sweeper' ); ?></p>
+                <?php
+                // Fetch data for the form
+                $quizzes = get_posts( array( 'post_type' => 'quiz', 'post_status' => 'publish', 'posts_per_page' => -1 ) );
+                $groups = get_terms( array( 'taxonomy' => 'student_group', 'hide_empty' => false ) );
+                ?>
+                <?php
+                if (isset($_GET['started'])) {
+                    echo '<div id="message" class="updated notice is-dismissible"><p>Game started successfully!</p></div>';
+                }
+                if (isset($_GET['ended'])) {
+                    echo '<div id="message" class="updated notice is-dismissible"><p>Game ended successfully.</p></div>';
+                }
+                ?>
+                <form method="post">
                 <input type="hidden" name="action" value="start_game">
                 <?php wp_nonce_field( 'start_game_nonce' ); ?>
 

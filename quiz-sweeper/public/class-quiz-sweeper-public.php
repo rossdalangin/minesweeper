@@ -131,8 +131,22 @@ class Quiz_Sweeper_Public {
 
     public function ajax_get_game_state() {
         global $wpdb;
-        check_ajax_referer( 'quiz_sweeper_student_nonce', 'nonce' );
+        $log_data = array( 'timestamp' => current_time('mysql'), 'get_data' => $_GET );
+
+        if ( ! check_ajax_referer( 'quiz_sweeper_student_nonce', 'nonce', false ) ) {
+            $log_data['error'] = 'Nonce verification failed.';
+            set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
+            wp_send_json_error( array( 'message' => 'Nonce error.' ) );
+            return;
+        }
+
         $game_id = isset( $_GET['game_id'] ) ? intval( $_GET['game_id'] ) : 0;
+        if ( empty($game_id) ) {
+            $log_data['error'] = 'Game ID was empty.';
+            set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
+            wp_send_json_error( array( 'message' => 'Game ID error.' ) );
+            return;
+        }
 
         // Get grid state
         $grid_table = $wpdb->prefix . 'quiz_sweeper_game_grid';
