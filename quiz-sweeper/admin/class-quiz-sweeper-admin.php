@@ -104,6 +104,7 @@ class Quiz_Sweeper_Admin {
      * @since    1.0.0
      */
     public function add_admin_menu() {
+		// Main plugin menu page
         add_menu_page(
             __( 'Quiz Sweeper', 'quiz-sweeper' ),
             __( 'Quiz Sweeper', 'quiz-sweeper' ),
@@ -113,6 +114,7 @@ class Quiz_Sweeper_Admin {
             'dashicons-games'
         );
 
+		// Submenu for managing student groups
         add_submenu_page(
             $this->plugin_name,
             __( 'Manage Groups', 'quiz-sweeper' ),
@@ -122,6 +124,7 @@ class Quiz_Sweeper_Admin {
             array( $this, 'render_groups_page' )
         );
 
+		// Submenu for starting a new quiz game
         add_submenu_page(
             $this->plugin_name,
             __( 'Start Quiz', 'quiz-sweeper' ),
@@ -131,6 +134,7 @@ class Quiz_Sweeper_Admin {
             array( $this, 'render_start_quiz_page' )
         );
 
+		// Submenu for instructions
         add_submenu_page(
             $this->plugin_name,
             __( 'How to Use', 'quiz-sweeper' ),
@@ -172,6 +176,10 @@ class Quiz_Sweeper_Admin {
         <?php
     }
 
+    /**
+	 * AJAX handler for adding a new question to a quiz.
+	 * Triggered from the quiz editor meta box.
+	 */
     public function ajax_add_question_to_quiz() {
         if ( ! check_ajax_referer( 'quiz_sweeper_admin_nonce', 'nonce', false ) ) {
             wp_send_json_error( array( 'message' => 'Error: Nonce verification failed.' ) );
@@ -222,6 +230,10 @@ class Quiz_Sweeper_Admin {
         ) );
     }
 
+    /**
+	 * AJAX handler for fetching all questions for a given quiz.
+	 * Used to populate the list in the quiz editor meta box.
+	 */
     public function ajax_get_quiz_questions() {
         check_ajax_referer( 'quiz_sweeper_admin_nonce', 'nonce' );
 
@@ -250,6 +262,9 @@ class Quiz_Sweeper_Admin {
         wp_send_json_success( $data );
     }
 
+    /**
+	 * AJAX handler for deleting a question.
+	 */
     public function ajax_delete_quiz_question() {
         check_ajax_referer( 'quiz_sweeper_admin_nonce', 'nonce' );
 
@@ -269,6 +284,10 @@ class Quiz_Sweeper_Admin {
         }
     }
 
+    /**
+	 * AJAX handler for a student revealing a cell on the game board.
+	 * This is the core gameplay logic trigger.
+	 */
     public function ajax_reveal_cell() {
         global $wpdb;
         // This nonce will be passed from the student's JS
@@ -388,6 +407,11 @@ class Quiz_Sweeper_Admin {
      *
      * @since    1.0.0
      */
+    /**
+	 * Handles all form submissions from the various admin pages.
+	 * Hooked to `admin_init` to ensure it runs before any headers are sent,
+	 * allowing for safe redirects.
+	 */
     public function handle_group_form_actions() {
         global $wpdb;
 
@@ -487,6 +511,10 @@ class Quiz_Sweeper_Admin {
         }
     }
 
+    /**
+	 * Renders the page for managing student groups.
+	 * This page has two views: the main list of groups, and the member assignment screen.
+	 */
     public function render_groups_page() {
         // Check if we are editing members
         if ( isset( $_GET['action'] ) && $_GET['action'] == 'edit_members' && isset( $_GET['group_id'] ) ) {
@@ -571,6 +599,12 @@ class Quiz_Sweeper_Admin {
      * @since    1.0.0
      * @param    int    $group_id    The ID of the group to edit.
      */
+    /**
+	 * Renders the UI for assigning users (students) to a specific group.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $group_id    The term ID of the group being edited.
+	 */
     private function render_members_assignment_page( $group_id ) {
         $group = get_term( $group_id, 'student_group' );
 
@@ -628,6 +662,9 @@ class Quiz_Sweeper_Admin {
      *
      * @since    1.0.0
      */
+    /**
+	 * Renders the page for starting a new quiz or managing an active one.
+	 */
     public function render_start_quiz_page() {
         global $wpdb;
         ?>

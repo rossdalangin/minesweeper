@@ -29,15 +29,15 @@
  */
 class Quiz_Sweeper {
 
-    /**
-     * The loader that's responsible for maintaining and registering all hooks that power
-     * the plugin.
-     *
-     * @since    1.0.0
-     * @access   protected
-     * @var      Quiz_Sweeper_Loader    $loader    Maintains and registers all hooks for the plugin.
-     */
-    protected $loader;
+	/**
+	 * The loader that's responsible for maintaining and registering all hooks that power
+	 * the plugin.
+	 *
+	 * @since    1.0.0
+	 * @access   protected
+	 * @var      Quiz_Sweeper_Loader    $loader    Maintains and registers all hooks for the plugin.
+	 */
+	protected $loader;
 
     /**
      * The unique identifier of this plugin.
@@ -95,27 +95,27 @@ class Quiz_Sweeper {
      */
     private function load_dependencies() {
 
-        /**
-         * The class responsible for orchestrating the actions and filters of the
-         * core plugin.
-         */
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-quiz-sweeper-loader.php';
+		/**
+		 * The class responsible for orchestrating the actions and filters of the
+		 * core plugin.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-quiz-sweeper-loader.php';
 
-        /**
-         * The class responsible for defining all actions that occur in the admin area.
-         */
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-quiz-sweeper-admin.php';
+		/**
+		 * The class responsible for defining all actions that occur in the admin area.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-quiz-sweeper-admin.php';
 
-        /**
-         * The class responsible for defining all actions that occur in the public-facing
-         * side of the site.
-         */
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-quiz-sweeper-public.php';
+		/**
+		 * The class responsible for defining all actions that occur in the public-facing
+		 * side of the site.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-quiz-sweeper-public.php';
 
-        /**
-         * The class responsible for defining the custom post types and taxonomies.
-         */
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-quiz-sweeper-cpts.php';
+		/**
+		 * The class responsible for defining the custom post types and taxonomies.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-quiz-sweeper-cpts.php';
 
     }
 

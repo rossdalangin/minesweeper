@@ -72,10 +72,18 @@ class Quiz_Sweeper_Public {
         wp_register_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/quiz-sweeper-public.js', array( 'jquery' ), $this->version, true );
     }
 
+    /**
+	 * Registers the shortcodes used by the plugin.
+	 */
     public function register_shortcodes() {
         add_shortcode( 'quiz_sweeper_board', array( $this, 'render_game_board_shortcode' ) );
     }
 
+    /**
+	 * The callback function for the [quiz_sweeper_board] shortcode.
+	 * It performs checks to ensure a student is logged in and part of an active game.
+	 * If so, it enqueues the game script and renders the HTML structure for the game board.
+	 */
     public function render_game_board_shortcode() {
         global $wpdb;
         $user = wp_get_current_user();
@@ -143,6 +151,11 @@ class Quiz_Sweeper_Public {
         return ob_get_clean();
     }
 
+    /**
+	 * AJAX handler to get the current state of the game.
+	 * Returns the grid layout and scores for all groups.
+	 * This is polled by the student's browser to keep the game board updated.
+	 */
     public function ajax_get_game_state() {
         global $wpdb;
         $log_data = array( 'timestamp' => current_time('mysql'), 'get_data' => $_GET );
@@ -199,6 +212,11 @@ class Quiz_Sweeper_Public {
         wp_send_json_success( array( 'grid' => $grid_data, 'scores' => $score_data ) );
     }
 
+    /**
+	 * AJAX handler to get the details of a specific question.
+	 * Called when a student clicks on a question cell, before they answer.
+	 * Does not reveal the cell, only fetches the question text and choices.
+	 */
     public function ajax_get_question_details() {
         global $wpdb;
         check_ajax_referer( 'quiz_sweeper_student_nonce', 'nonce' );
