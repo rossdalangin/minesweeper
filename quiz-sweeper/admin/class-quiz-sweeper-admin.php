@@ -709,6 +709,7 @@ class Quiz_Sweeper_Admin {
                     <input type="submit" name="submit" id="submit" class="button button-primary" value="<?php _e( 'Start Quiz Game', 'quiz-sweeper' ); ?>" <?php if ( empty( $quizzes ) || empty( $groups ) ) echo 'disabled'; ?>>
                 </p>
             </form>
+            <?php endif; ?>
         </div>
         <?php
     }
