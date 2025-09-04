@@ -69,10 +69,7 @@ class Quiz_Sweeper_Public {
      * @since    1.0.0
      */
     public function enqueue_scripts() {
-        wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/quiz-sweeper-public.js', array( 'jquery' ), $this->version, true );
-
-        // We need to pass data to the script
-        // This will be done in the shortcode handler to ensure it only loads when needed
+        wp_register_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/quiz-sweeper-public.js', array( 'jquery' ), $this->version, true );
     }
 
     public function register_shortcodes() {
@@ -120,8 +117,8 @@ class Quiz_Sweeper_Public {
             return $output;
         }
 
-        // If all checks pass, enqueue the script and pass data
-        wp_enqueue_script( $this->plugin_name );
+        // If all checks pass, localize the script with data and enqueue it.
+        // This ensures the script is only loaded on this page and has the data it needs.
         wp_localize_script(
             $this->plugin_name,
             'quiz_sweeper_student_ajax',
@@ -132,6 +129,7 @@ class Quiz_Sweeper_Public {
                 'group_id' => $user_group->term_id
             )
         );
+        wp_enqueue_script( $this->plugin_name );
 
         // Return the HTML structure for the JS to populate
         ob_start();
