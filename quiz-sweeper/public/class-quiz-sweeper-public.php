@@ -81,9 +81,9 @@ class Quiz_Sweeper_Public {
 
     public function render_game_board_shortcode() {
         global $wpdb;
-        $user_id = get_current_user_id();
+        $user = wp_get_current_user();
 
-        if ( ! is_user_logged_in() || ! in_array( 'subscriber', (array) wp_get_current_user()->roles ) ) {
+        if ( ! is_user_logged_in() || ! in_array( 'subscriber', (array) $user->roles ) ) {
             return '<p>You must be a logged-in student to play.</p>';
         }
 
@@ -93,15 +93,31 @@ class Quiz_Sweeper_Public {
         }
 
         // Check if user is in a participating group
-        $user_groups = wp_get_object_terms( $user_id, 'student_group' );
+        $user_groups = wp_get_object_terms( $user->ID, 'student_group' );
         if ( is_wp_error( $user_groups ) || empty( $user_groups ) ) {
              return '<p>You are not assigned to a group. Please contact your teacher.</p>';
         }
-        $group_id = $user_groups[0]->term_id;
+        $user_group = $user_groups[0];
 
-        $participating_groups = $wpdb->get_col( $wpdb->prepare( "SELECT group_id FROM {$wpdb->prefix}quiz_sweeper_game_scores WHERE game_id = %d", $active_game->game_id ) );
-        if ( ! in_array( $group_id, $participating_groups ) ) {
-            return '<p>Your group is not participating in the current game.</p>';
+        $participating_group_ids = $wpdb->get_col( $wpdb->prepare( "SELECT group_id FROM {$wpdb->prefix}quiz_sweeper_game_scores WHERE game_id = %d", $active_game->game_id ) );
+
+        if ( ! in_array( $user_group->term_id, $participating_group_ids ) ) {
+            $participating_group_names = array();
+            foreach($participating_group_ids as $gid) {
+                $g = get_term($gid, 'student_group');
+                if ($g) {
+                    $participating_group_names[] = $g->name;
+                }
+            }
+            $output = '<h3>Game Status</h3>';
+            $output .= '<p>A game is active, but your group is not participating.</p>';
+            $output .= '<ul>';
+            $output .= '<li><strong>Your Name:</strong> ' . esc_html($user->display_name) . '</li>';
+            $output .= '<li><strong>Your Group:</strong> ' . esc_html($user_group->name) . '</li>';
+            $output .= '<li><strong>Groups Playing This Game:</strong> ' . esc_html(implode(', ', $participating_group_names)) . '</li>';
+            $output .= '</ul>';
+            $output .= '<p>Please ask your teacher to include your group in the game.</p>';
+            return $output;
         }
 
         // If all checks pass, enqueue the script and pass data
