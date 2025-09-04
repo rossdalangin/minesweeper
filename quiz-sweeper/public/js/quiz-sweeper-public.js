@@ -153,6 +153,27 @@
             };
             $.post(ajaxUrl, data, function(response) {
                 if (response.success) {
+                    // Optimistic update for instant feedback
+                    var cellEl = boardEl.find('.cell[data-row="' + row + '"][data-col="' + col + '"]');
+                    cellEl.off('click').addClass('revealed');
+                    var icon = '';
+                    switch(response.data.cell_type) {
+                        case 'bomb': icon = '💣'; break;
+                        case 'knife': icon = '🔪'; break;
+                        case 'question':
+                            if (response.data.was_correct) {
+                                icon = '✅';
+                                cellEl.addClass('correct');
+                            } else {
+                                icon = '❌';
+                                cellEl.addClass('incorrect');
+                            }
+                            break;
+                        case 'empty': icon = ' '; break;
+                    }
+                    cellEl.html('<span class="cell-icon">' + icon + '</span>');
+
+                    // Fetch the authoritative state to update scores and ensure consistency
                     getGameState();
                 } else {
                     alert('Error: ' + response.data.message);
