@@ -125,23 +125,20 @@ class Quiz_Sweeper_Public {
             return $output;
         }
 
-        // If all checks pass, enqueue the script and then localize it with data.
-        // This is the correct order to ensure the data object is attached to the script.
+        // Enqueue the main script.
         wp_enqueue_script( $this->plugin_name );
-        wp_localize_script(
-            $this->plugin_name,
-            'quiz_sweeper_student_ajax',
-            array(
-                'ajax_url' => admin_url( 'admin-ajax.php' ),
-                'nonce'    => wp_create_nonce( 'quiz_sweeper_student_nonce' ),
-                'game_id'  => $active_game->game_id,
-                'group_id' => $user_group->term_id
-            )
-        );
 
-        // Return the HTML structure for the JS to populate
-        ob_start();
+        // Directly print the JS object as a workaround for localization issues.
+        $data = array(
+            'ajax_url' => admin_url( 'admin-ajax.php' ),
+            'nonce'    => wp_create_nonce( 'quiz_sweeper_student_nonce' ),
+            'game_id'  => $active_game->game_id,
+            'group_id' => $user_group->term_id
+        );
         ?>
+        <script type="text/javascript">
+            var quiz_sweeper_student_ajax = <?php echo json_encode($data); ?>;
+        </script>
         <div id="quiz-sweeper-app">
             <div id="quiz-sweeper-scores"></div>
             <div id="quiz-sweeper-board"></div>
