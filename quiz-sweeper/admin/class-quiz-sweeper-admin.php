@@ -284,8 +284,6 @@ class Quiz_Sweeper_Admin {
         }
     }
 
-    }
-
     public function add_quiz_meta_boxes() {
         add_meta_box(
             'quiz_sweeper_questions',
