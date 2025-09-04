@@ -138,7 +138,6 @@ class Quiz_Sweeper {
         $this->loader->add_action( 'wp_ajax_add_question_to_quiz', $plugin_admin, 'ajax_add_question_to_quiz' );
         $this->loader->add_action( 'wp_ajax_get_quiz_questions', $plugin_admin, 'ajax_get_quiz_questions' );
         $this->loader->add_action( 'wp_ajax_delete_quiz_question', $plugin_admin, 'ajax_delete_quiz_question' );
-        $this->loader->add_action( 'wp_ajax_reveal_cell', $plugin_admin, 'ajax_reveal_cell' );
         $this->loader->add_action( 'admin_init', $plugin_admin, 'handle_group_form_actions' );
         $this->loader->add_action( 'init', $plugin_cpts, 'register_cpts_and_taxonomies' );
 
@@ -160,6 +159,7 @@ class Quiz_Sweeper {
         $this->loader->add_action( 'init', $plugin_public, 'register_shortcodes' );
         $this->loader->add_action( 'wp_ajax_get_game_state', $plugin_public, 'ajax_get_game_state' );
         $this->loader->add_action( 'wp_ajax_get_question_details', $plugin_public, 'ajax_get_question_details' );
+        $this->loader->add_action( 'wp_ajax_reveal_cell', $plugin_public, 'ajax_reveal_cell' );
 
     }
 
