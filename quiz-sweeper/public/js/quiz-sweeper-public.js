@@ -3,8 +3,10 @@
 
     $(function() {
         if (typeof quiz_sweeper_student_ajax === 'undefined') {
+            alert('Debug Error: localized data object "quiz_sweeper_student_ajax" was not found.');
             return;
         }
+        alert('Debug Info: ' + JSON.stringify(quiz_sweeper_student_ajax));
 
         var ajaxUrl = quiz_sweeper_student_ajax.ajax_url;
         var nonce = quiz_sweeper_student_ajax.nonce;
