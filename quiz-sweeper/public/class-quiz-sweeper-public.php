@@ -125,8 +125,9 @@ class Quiz_Sweeper_Public {
             return $output;
         }
 
-        // If all checks pass, localize the script with data and enqueue it.
-        // This ensures the script is only loaded on this page and has the data it needs.
+        // If all checks pass, enqueue the script and then localize it with data.
+        // This is the correct order to ensure the data object is attached to the script.
+        wp_enqueue_script( $this->plugin_name );
         wp_localize_script(
             $this->plugin_name,
             'quiz_sweeper_student_ajax',
@@ -137,7 +138,6 @@ class Quiz_Sweeper_Public {
                 'group_id' => $user_group->term_id
             )
         );
-        wp_enqueue_script( $this->plugin_name );
 
         // Return the HTML structure for the JS to populate
         ob_start();
