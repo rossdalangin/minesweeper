@@ -388,7 +388,7 @@ class Quiz_Sweeper_Admin {
      *
      * @since    1.0.0
      */
-    public function render_groups_page() {
+    public function handle_group_form_actions() {
         // Handle Save Members
         if ( isset( $_POST['action'] ) && $_POST['action'] == 'save_members' && isset( $_POST['group_id'] ) && check_admin_referer( 'save_members_nonce' ) ) {
             $group_id = intval( $_POST['group_id'] );
@@ -413,14 +413,8 @@ class Quiz_Sweeper_Admin {
                 }
             }
 
-            wp_redirect( admin_url( 'admin.php?page=' . $this->plugin_name . '-groups' ) );
+            wp_redirect( admin_url( 'admin.php?page=' . $this->plugin_name . '-groups&updated=true' ) );
             exit;
-        }
-
-        // Check if we are editing members
-        if ( isset( $_GET['action'] ) && $_GET['action'] == 'edit_members' && isset( $_GET['group_id'] ) ) {
-            $this->render_members_assignment_page( intval( $_GET['group_id'] ) );
-            return;
         }
 
         // Handle Add New Group
@@ -429,12 +423,23 @@ class Quiz_Sweeper_Admin {
             if ( ! empty( $group_name ) ) {
                 wp_insert_term( $group_name, 'student_group' );
             }
+            // No redirect needed, the page will just reload with the new term
         }
 
         // Handle Delete Group
         if ( isset( $_GET['action'] ) && $_GET['action'] == 'delete_group' && isset( $_GET['group_id'] ) && check_admin_referer( 'delete_group_' . $_GET['group_id'] ) ) {
             $group_id = intval( $_GET['group_id'] );
             wp_delete_term( $group_id, 'student_group' );
+            wp_redirect( admin_url( 'admin.php?page=' . $this->plugin_name . '-groups&deleted=true' ) );
+            exit;
+        }
+    }
+
+    public function render_groups_page() {
+        // Check if we are editing members
+        if ( isset( $_GET['action'] ) && $_GET['action'] == 'edit_members' && isset( $_GET['group_id'] ) ) {
+            $this->render_members_assignment_page( intval( $_GET['group_id'] ) );
+            return;
         }
 
         // Get all student groups
@@ -442,6 +447,14 @@ class Quiz_Sweeper_Admin {
         ?>
         <div class="wrap">
             <h2><?php _e( 'Manage Student Groups', 'quiz-sweeper' ); ?></h2>
+            <?php
+            if (isset($_GET['updated'])) {
+                echo '<div id="message" class="updated notice is-dismissible"><p>Group members updated.</p></div>';
+            }
+            if (isset($_GET['deleted'])) {
+                echo '<div id="message" class="updated notice is-dismissible"><p>Group deleted.</p></div>';
+            }
+            ?>
             <div id="col-container">
                 <div id="col-left">
                     <div class="col-wrap">
