@@ -155,7 +155,7 @@ class Quiz_Sweeper_Public {
 	 */
     public function ajax_get_game_state() {
         global $wpdb;
-        $log_data = array( 'timestamp' => current_time('mysql'), 'get_data' => $_GET );
+        $log_data = array( 'action' => 'get_game_state', 'timestamp' => current_time('mysql'), 'get_data' => $_GET );
 
         if ( ! check_ajax_referer( 'quiz_sweeper_student_nonce', 'nonce', false ) ) {
             $log_data['error'] = 'Nonce verification failed.';
@@ -216,7 +216,15 @@ class Quiz_Sweeper_Public {
 	 */
     public function ajax_get_question_details() {
         global $wpdb;
-        check_ajax_referer( 'quiz_sweeper_student_nonce', 'nonce' );
+        $log_data = array( 'action' => 'get_question_details', 'timestamp' => current_time('mysql'), 'get_data' => $_GET );
+
+        if ( ! check_ajax_referer( 'quiz_sweeper_student_nonce', 'nonce', false ) ) {
+            $log_data['error'] = 'Nonce verification failed.';
+            set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
+            wp_send_json_error( array( 'message' => 'Nonce error.' ) );
+            return;
+        }
+
         $game_id = isset( $_GET['game_id'] ) ? intval( $_GET['game_id'] ) : 0;
         $row = isset( $_GET['row'] ) ? intval( $_GET['row'] ) : -1;
         $col = isset( $_GET['col'] ) ? intval( $_GET['col'] ) : -1;
@@ -225,6 +233,9 @@ class Quiz_Sweeper_Public {
         $cell = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $grid_table WHERE game_id = %d AND row_num = %d AND col_num = %d", $game_id, $row, $col ) );
 
         if ( !$cell || $cell->is_revealed ) {
+            $log_data['error'] = 'Cell invalid or already revealed.';
+            $log_data['cell'] = $cell;
+            set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
             wp_send_json_error( array( 'message' => 'Cell invalid or already revealed.' ) );
         }
 
@@ -251,12 +262,21 @@ class Quiz_Sweeper_Public {
 	 */
     public function ajax_reveal_cell() {
         global $wpdb;
-        // This nonce will be passed from the student's JS
-        check_ajax_referer( 'quiz_sweeper_student_nonce', 'nonce' );
+        $log_data = array( 'action' => 'reveal_cell', 'timestamp' => current_time('mysql'), 'post_data' => $_POST );
+
+        if ( ! check_ajax_referer( 'quiz_sweeper_student_nonce', 'nonce', false ) ) {
+            $log_data['error'] = 'Nonce verification failed.';
+            set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
+            wp_send_json_error( array( 'message' => 'Nonce error.' ) );
+            return;
+        }
 
         $user_id = get_current_user_id();
         if ( ! $user_id || ! in_array( 'subscriber', (array) wp_get_current_user()->roles ) ) {
+            $log_data['error'] = 'Invalid user role or not logged in.';
+            set_transient('quiz_sweeper_debug_log', $log_data, HOUR_IN_SECONDS);
             wp_send_json_error( array( 'message' => 'Invalid user.' ) );
+            return;
         }
 
         $game_id = isset( $_POST['game_id'] ) ? intval( $_POST['game_id'] ) : 0;
