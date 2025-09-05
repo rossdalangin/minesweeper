@@ -267,6 +267,7 @@ class Quiz_Sweeper_Public {
         $user_groups = wp_get_object_terms( $user_id, 'student_group' );
         if ( is_wp_error( $user_groups ) || empty( $user_groups ) ) {
             wp_send_json_error( array( 'message' => 'You are not in a group.' ) );
+            return;
         }
         $group_id = $user_groups[0]->term_id;
 
